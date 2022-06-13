@@ -31,7 +31,7 @@ public inline val StatusEvent.robotLocation: Vec
  * @param headingRadians Your heading in radians.
  * @param otherRobotBearingRadians The bearing of the other robot in radians. This is relative to your gun heading.
  */
-public fun getHitEdges(headingRadians: Double, otherRobotBearingRadians: Double): HeadingSet {
+public fun getHitEdges(headingRadians: Double, otherRobotBearingRadians: Double): Set<Heading> {
     // Convert the bearing of the other robot, which is relative to my heading, to an angle relative to the
     // battlefield (0 radians is north).
     val otherRobotHeading = normalizeRadians(otherRobotBearingRadians + headingRadians)
@@ -42,7 +42,7 @@ public fun getHitEdges(headingRadians: Double, otherRobotBearingRadians: Double)
     val otherRobotVerticalEdge = if (otherIsAbove) Heading.NORTH else Heading.SOUTH
     val otherRobotHorizontalEdge = if (otherIsRight) Heading.EAST else Heading.WEST
 
-    return HeadingSet(otherRobotVerticalEdge, otherRobotHorizontalEdge)
+    return setOf(otherRobotVerticalEdge, otherRobotHorizontalEdge)
 }
 
 /**

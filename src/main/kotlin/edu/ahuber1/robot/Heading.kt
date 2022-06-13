@@ -45,3 +45,6 @@ public val Heading.radians: Double
         Heading.EAST -> toRadians(90.0)
         Heading.WEST -> toRadians(270.0)
     }
+
+public inline val Iterable<Heading>.opposite: List<Heading>
+    get () = this.map { it.opposite }
