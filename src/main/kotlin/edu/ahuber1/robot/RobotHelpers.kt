@@ -58,10 +58,10 @@ public fun getStraightLineDistanceToWalls(
 ): Map<Heading, Double> {
     return walls.distinct().associateWith {
         when (it) {
-            Heading.NORTH -> abs(location.y - battlefieldSize.height)
+            Heading.NORTH -> abs(battlefieldSize.height - location.y)
             Heading.SOUTH -> abs(location.y)
             Heading.WEST -> abs(location.x)
-            Heading.EAST -> abs(location.x - battlefieldSize.width)
+            Heading.EAST -> abs(battlefieldSize.width - location.x)
         }
     }
 }
