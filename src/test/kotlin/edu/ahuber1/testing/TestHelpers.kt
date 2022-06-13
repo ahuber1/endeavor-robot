@@ -1,17 +1,18 @@
-package edu.ahuber1.robot.endeavor
+package edu.ahuber1.testing
 
+import edu.ahuber1.math.equalsWithinDelta
 import org.junit.jupiter.api.fail
 import kotlin.math.abs
 
-internal inline fun <T> Array<T>.testAll(block: (T.() -> Unit)) {
+inline fun <T> Array<T>.testAll(block: (T.() -> Unit)) {
     this.forEachIndexed { index, testCase ->
         println("Running test ${index + 1} of ${this.size} -> $testCase")
         testCase.block()
     }
 }
 
-internal fun assertEqualsWithinDelta(expected: Double, actual: Double, delta: Double, description: String = "") {
-    if (equalsWithinDelta(expected, actual, delta)) {
+fun assertEqualsWithinDelta(expected: Double, actual: Double, delta: Double, description: String = "") {
+    if (expected.equalsWithinDelta(actual, delta)) {
         return
     }
 
@@ -35,6 +36,3 @@ internal fun assertEqualsWithinDelta(expected: Double, actual: Double, delta: Do
         }
     }
 }
-
-internal fun equalsWithinDelta(expected: Double, actual: Double, delta: Double): Boolean =
-    abs(expected - actual) <= delta
