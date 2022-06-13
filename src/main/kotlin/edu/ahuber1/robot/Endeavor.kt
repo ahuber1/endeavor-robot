@@ -184,27 +184,27 @@ public class Endeavor : TeamRobot() {
      * @param enemy The enemy to engage.
      */
     private fun createEngagementOrder(status: StatusEvent, enemy: Enemy): EngagementOrder? {
-        // Calculate the distance between Endeavor's location and the enemy's location.
-        val distance = Vec.distance(status.robotLocation, enemy.location)
-        val minBulletPower = 3.0
-        val bulletPower = when (distance) {
-            0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
-            else -> min(400.0 / distance, minBulletPower)
-        }
-
         // Calculate the gun's heading (0 radians is north, π/2 radians (90 degrees) is east, etc.)
         val bearingRadians = Vec.angleRadians(status.robotLocation, enemy.location)
         val headingRadians = status.status.gunHeadingRadians + bearingRadians
+
+        // Calculate bullet power
+        val minBulletPower = 3.0
+        val bulletPower = when (val distance = Vec.distance(status.robotLocation, enemy.location)) {
+            0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
+            else -> min(400.0 / distance, minBulletPower)
+        }
 
         // Calculate the number of turns needed to rotate the gun barrel so we're aiming at the target and the
         // number of turns needed to reach the target.
         //
         // TODO: As future enhancement, see if we can predict where the enemy will be in the future.
         val rotateTurnCount = (headingRadians - status.status.gunHeadingRadians) / Rules.GUN_TURN_RATE_RADIANS
-        val shootTurnCount = when (val shootTurnCountDenominator = Rules.getBulletSpeed(bulletPower) * cos(headingRadians)) {
-            0.0 -> return null // Avoids divide-by-zero error
-            else -> (status.robotLocation.x + enemy.location.x) / shootTurnCountDenominator
-        }
+        val shootTurnCount =
+            when (val shootTurnCountDenominator = Rules.getBulletSpeed(bulletPower) * cos(headingRadians)) {
+                0.0 -> return null // Avoids divide-by-zero error
+                else -> (status.robotLocation.x + enemy.location.x) / shootTurnCountDenominator
+            }
 
         // Return EngagementOrder
         val timeOfImpact = time.toDouble() + rotateTurnCount + shootTurnCount
