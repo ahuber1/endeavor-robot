@@ -67,12 +67,12 @@ public class Endeavor : TeamRobot() {
     override fun onScannedRobot(event: ScannedRobotEvent?) {
         super.onScannedRobot(event)
 
-        val status = status ?: return
         if (event == null || shouldIgnoreRobot(event)) {
             return
         }
 
         lock.withLock {
+            val status = status ?: return@withLock
             val enemyLocation =
                 getCoordinateAlongHeadingRadians(status.robotLocation, event.distance, event.headingRadians)
 
