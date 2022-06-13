@@ -27,8 +27,11 @@ public class Endeavor : TeamRobot() {
         }
 
         lock.withLock {
+            if (e.robotLocation != status?.robotLocation) {
+                println("Current location: ${e.robotLocation}")
+            }
+
             this.status = e
-             println("Current location: ${e.robotLocation}")
         }
     }
 
@@ -80,15 +83,15 @@ public class Endeavor : TeamRobot() {
 
         lock.withLock {
             val status = this.status ?: return@withLock
-            println("enemy_distance=${event.distance}")
-            println("enemy_heading=${event.heading}")
-            println("enemy_bearing=${event.bearing}")
-            println("status_heading=${status.status.heading}")
-            println("status_gun_heading=${status.status.gunHeading}")
-            println("status_radar_heading=${status.status.radarHeading}")
+//            println("enemy_distance=${event.distance}")
+//            println("enemy_heading=${event.heading}")
+//            println("enemy_bearing=${event.bearing}")
+//            println("status_heading=${status.status.heading}")
+//            println("status_gun_heading=${status.status.gunHeading}")
+//            println("status_radar_heading=${status.status.radarHeading}")
 
             val enemyLocation =
-                getCoordinateAlongHeadingRadians(status.robotLocation, event.distance, event.headingRadians)
+                projectPoint(status.robotLocation, event.headingRadians, event.distance)
             println("Location of ${event.name} is $enemyLocation")
             enemies[event.name] = Enemy(event.name, enemyLocation)
         }
@@ -137,12 +140,13 @@ public class Endeavor : TeamRobot() {
         // as quickly as possible.
         if (radarRotationDirection == null) {
             val shortestAngleRadians =
-                shortestRotationAngleRadians(status.robotLocation, status.status.radarHeadingRadians, battlefieldCenter)
+                getShortestBeamRotationAngle(status.robotLocation, status.status.radarHeadingRadians, battlefieldCenter)
 
             radarRotationDirection = when {
                 shortestAngleRadians < 0 -> RotationDirection.COUNTERCLOCKWISE
                 else -> RotationDirection.CLOCKWISE
             }
+
             this.radarRotationDirection = radarRotationDirection
         }
 
@@ -209,8 +213,9 @@ public class Endeavor : TeamRobot() {
         // number of turns needed to reach the target.
         //
         // TODO: As future enhancement, see if we can predict where the enemy will be in the future.
-        val rotationAmountRadians = shortestRotationAngleRadians(status.robotLocation, status.status.gunHeadingRadians, enemy.location)
-        println("Shortest rotation amount: ${toDegrees(rotationAmountRadians)}")
+        println("Determining gun rotation angle")
+        val rotationAmountRadians =
+            getShortestBeamRotationAngle(status.robotLocation, status.status.gunHeadingRadians, enemy.location)
 
         val rotateTurnCount = (rotationAmountRadians) / Rules.GUN_TURN_RATE_RADIANS
         val shootTurnCount =
@@ -229,7 +234,7 @@ public class Endeavor : TeamRobot() {
         val engagementOrder = enemies[enemyName]?.engagementOrder ?: return
 
         // Rotate gun
-        val gunRotationAngleRadians = shortestRotationAngleRadians(
+        val gunRotationAngleRadians = getShortestBeamRotationAngle(
             status.robotLocation,
             status.status.gunHeadingRadians,
             engagementOrder.enemy.location
@@ -242,11 +247,10 @@ public class Endeavor : TeamRobot() {
         fire(engagementOrder.bulletPower)
 
         // Advance on enemy
-        val rotationAngleRadians = shortestRotationAngleRadians(
-            status.robotLocation,
-            headingRadians,
-            engagementOrder.enemy.location
-        )
+        val rotationAngleRadians =
+            getShortestBeamRotationAngle(status.robotLocation, headingRadians, engagementOrder.enemy.location)
+
         turnRightRadians(rotationAngleRadians)
+        ahead(20.0)
     }
 }

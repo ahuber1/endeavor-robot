@@ -22,7 +22,7 @@ internal class TrigonometryTest {
         )
 
         testCases.testAll {
-            val actual = getCoordinateAlongHeadingRadians(origin, distance, headingRadians)
+            val actual = projectPoint(origin, headingRadians, distance)
             val (expectedX, expectedY) = expected
             println("expected=$expected, actual=$actual")
             assertEqualsWithinDelta(expectedX, actual.x, 1e-14, "x")

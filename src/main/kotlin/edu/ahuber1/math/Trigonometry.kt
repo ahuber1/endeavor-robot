@@ -6,15 +6,15 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Calculates a position [distance] units away from [origin] at an angle of [headingRadians].
- * @param origin The starting point.
- * @param distance The distance between [origin] and the [Vec] this method returns.
- * @param headingRadians The angle between [origin] and the [Vec] this method returns in radians.
+ * Calculates a position [distance] units away from [from] at an angle of [angleRadians].
+ * @param from The starting point.
+ * @param distance The distance between [from] and the [Vec] this method returns.
+ * @param angleRadians The angle between [from] and the [Vec] this method returns in radians.
  */
-public fun getCoordinateAlongHeadingRadians(origin: Vec, distance: Double, headingRadians: Double): Vec {
-    val dx = distance * cos(headingRadians)
-    val dy = distance * sin(headingRadians)
-    return origin.translate(dx, dy)
+public fun projectPoint(from: Vec, angleRadians: Double, distance: Double): Vec {
+    val dx = distance * cos(angleRadians)
+    val dy = distance * sin(angleRadians)
+    return from.translate(dx, dy)
 }
 
 /**
@@ -62,42 +62,4 @@ public fun toRadians(degrees: Double): Double {
  */
 public fun toDegrees(radians: Double): Double {
     return (180.0 * radians) / Math.PI
-}
-
-/**
- * Returns the angle of rotation that has the shortest arc length from an origin point at a particular heading to
- * another point.
- * @param origin The origin point.
- * @param headingRadians The heading in radians.
- * @param destination The end point.
- */
-public fun shortestRotationAngleRadians(origin: Vec, headingRadians: Double, destination: Vec): Double {
-    data class TestArc(val angleRadians: Double, val arcLength: Double, val endPoint: Vec)
-
-    val testPoint = getCoordinateAlongHeadingRadians(origin, Vec.distance(origin, destination), headingRadians)
-
-    val angle1 = calculateArcAngleRadians(origin, testPoint, destination)
-    val angle2 = (2 * Math.PI) - angle1
-
-    val arcRadius = Vec.distance(origin, destination)
-    val testArcAngles = doubleArrayOf(-angle1, -angle2, angle1, angle2)
-    val testArcs = testArcAngles.map { angleRadians ->
-        val arcLength = calculateArcLengthRadians(angleRadians, arcRadius)
-        val endPoint = getCoordinateAlongHeadingRadians(
-            origin,
-            Vec.distance(origin, destination),
-            headingRadians + angleRadians
-        )
-        TestArc(angleRadians, arcLength, endPoint)
-    }
-
-    val sortedTestArcs = testArcs.sortedWith(
-        compareBy(
-            { it.arcLength },
-            { Vec.distance(it.endPoint, destination) }
-        )
-    )
-
-    return sortedTestArcs.first().angleRadians
-
 }
