@@ -1,17 +1,19 @@
+buildscript {
+    repositories {
+        maven { url 'https://repo1.maven.org/maven2/' }
+    }
+}
+
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.20'
 }
 
 group = 'edu.ahuber1'
 version = '1.0-SNAPSHOT'
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation files('libs/robocode.jar')
+    implementation fileTree(dir: 'src/main/resources/', include: ['*.jar'])
     implementation 'io.github.microutils:kotlin-logging-jvm:2.1.21'
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
