@@ -1,10 +1,6 @@
 package edu.ahuber1.robot
 
-import edu.ahuber1.math.Vec
-import edu.ahuber1.math.getCoordinateAlongHeadingRadians
-import edu.ahuber1.math.shortestRotationAngleRadians
-import edu.ahuber1.math.toRadians
-import mu.KotlinLogging
+import edu.ahuber1.math.*
 import robocode.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -18,15 +14,26 @@ public class Endeavor : TeamRobot() {
     private data class EngagementOrder(val enemy: Enemy, val bulletPower: Double, val timeOfImpact: Double)
 
     private val lock = ReentrantLock()
-    private val logger = KotlinLogging.logger { }
     private val enemies = HashMap<String, Enemy>()
 
     private var status: StatusEvent? = null
     private var radarRotationDirection: RotationDirection? = null
 
+    override fun onStatus(e: StatusEvent?) {
+        super.onStatus(e)
+
+        if (e == null) {
+            return
+        }
+
+        lock.withLock {
+            this.status = e
+             println("Current location: ${e.robotLocation}")
+        }
+    }
+
     override fun onDeath(event: DeathEvent?) {
         super.onDeath(event)
-        logger.error { "Endeavor died!" }
     }
 
     override fun onHitRobot(event: HitRobotEvent?) {
@@ -73,9 +80,16 @@ public class Endeavor : TeamRobot() {
 
         lock.withLock {
             val status = this.status ?: return@withLock
+            println("enemy_distance=${event.distance}")
+            println("enemy_heading=${event.heading}")
+            println("enemy_bearing=${event.bearing}")
+            println("status_heading=${status.status.heading}")
+            println("status_gun_heading=${status.status.gunHeading}")
+            println("status_radar_heading=${status.status.radarHeading}")
+
             val enemyLocation =
                 getCoordinateAlongHeadingRadians(status.robotLocation, event.distance, event.headingRadians)
-
+            println("Location of ${event.name} is $enemyLocation")
             enemies[event.name] = Enemy(event.name, enemyLocation)
         }
     }
@@ -184,10 +198,6 @@ public class Endeavor : TeamRobot() {
      * @param enemy The enemy to engage.
      */
     private fun createEngagementOrder(status: StatusEvent, enemy: Enemy): EngagementOrder? {
-        // Calculate the gun's heading (0 radians is north, π/2 radians (90 degrees) is east, etc.)
-        val bearingRadians = Vec.angleRadians(status.robotLocation, enemy.location)
-        val headingRadians = status.status.gunHeadingRadians + bearingRadians
-
         // Calculate bullet power
         val minBulletPower = 3.0
         val bulletPower = when (val distance = Vec.distance(status.robotLocation, enemy.location)) {
@@ -199,7 +209,10 @@ public class Endeavor : TeamRobot() {
         // number of turns needed to reach the target.
         //
         // TODO: As future enhancement, see if we can predict where the enemy will be in the future.
-        val rotateTurnCount = (headingRadians - status.status.gunHeadingRadians) / Rules.GUN_TURN_RATE_RADIANS
+        val rotationAmountRadians = shortestRotationAngleRadians(status.robotLocation, status.status.gunHeadingRadians, enemy.location)
+        println("Shortest rotation amount: ${toDegrees(rotationAmountRadians)}")
+
+        val rotateTurnCount = (rotationAmountRadians) / Rules.GUN_TURN_RATE_RADIANS
         val shootTurnCount =
             when (val shootTurnCountDenominator = Rules.getBulletSpeed(bulletPower) * cos(headingRadians)) {
                 0.0 -> return null // Avoids divide-by-zero error
@@ -221,6 +234,8 @@ public class Endeavor : TeamRobot() {
             status.status.gunHeadingRadians,
             engagementOrder.enemy.location
         )
+        println("gunHeading: ${toDegrees(status.status.gunHeadingRadians)}")
+        println("shortestRotationAmount: ${toDegrees(gunRotationAngleRadians)}")
         turnGunRightRadians(gunRotationAngleRadians)
 
         // Fire gun

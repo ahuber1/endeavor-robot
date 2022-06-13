@@ -5,8 +5,8 @@ buildscript {
 }
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'org.jetbrains.kotlin.jvm' version '1.6.20'
+    id 'com.bnorm.robocode' version '0.1.1'
 }
 
 group = 'edu.ahuber1'
@@ -14,7 +14,6 @@ version = '1.0-SNAPSHOT'
 
 dependencies {
     implementation fileTree(dir: 'src/main/resources/', include: ['*.jar'])
-    implementation 'io.github.microutils:kotlin-logging-jvm:2.1.21'
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
@@ -32,4 +31,16 @@ compileTestKotlin {
 
 kotlin {
     explicitApi = 'strict'
+}
+
+robocode {
+    download = false
+
+    robots {
+        register('Endeavor') {
+            classPath = 'edu.ahuber1.robot.Endeavor'
+            version = '1.1'
+            description = 'What an Endeavor!'
+        }
+    }
 }

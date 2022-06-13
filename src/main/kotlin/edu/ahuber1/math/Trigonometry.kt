@@ -50,9 +50,18 @@ public fun normalizeRadians(radians: Double): Double {
 
 /**
  * Converts an angle in degrees to radians.
+ * @see toDegrees
  */
 public fun toRadians(degrees: Double): Double {
-    return degrees * (Math.PI / 180)
+    return degrees * (Math.PI / 180.0)
+}
+
+/**
+ * Converts an angle in radians to degrees.
+ * @see toRadians
+ */
+public fun toDegrees(radians: Double): Double {
+    return (180.0 * radians) / Math.PI
 }
 
 /**
