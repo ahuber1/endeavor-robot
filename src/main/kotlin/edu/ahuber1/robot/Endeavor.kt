@@ -125,7 +125,7 @@ public class Endeavor : TeamRobot() {
         }
 
         // Start rotating the radar, 45 degrees per turn
-        val rotationAmount = 360.0 // TODO Revert to 45.0
+        val rotationAmount = 360.0
         val rotationAngleRadians = when (radarRotationDirection) {
             RotationDirection.CLOCKWISE -> toRadians(rotationAmount)
             RotationDirection.COUNTERCLOCKWISE -> -toRadians(rotationAmount)
@@ -150,7 +150,8 @@ public class Endeavor : TeamRobot() {
      * Finds the enemy in [enemies] that will take the shortest amount of time to shoot.
      */
     private fun findShortestEnemyToEngage(): EngagementOrder? {
-        return enemies.values.mapNotNull(::createEngagementOrder).minByOrNull { Vec.distance(it.enemy.location, currentLocation) }
+        return enemies.values.mapNotNull(::createEngagementOrder)
+            .minByOrNull { Vec.distance(it.enemy.location, currentLocation) }
     }
 
     /**
