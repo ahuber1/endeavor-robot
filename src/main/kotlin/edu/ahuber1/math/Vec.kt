@@ -9,12 +9,6 @@ import kotlin.math.sqrt
  * A point in 2D Cartesian space.
  */
 public data class Vec(val x: Double, val y: Double) {
-
-    /**
-     * Creates a new [Vec] with its x and y component both set to 0.0.
-     */
-    public constructor() : this(0.0, 0.0)
-
     /**
      * Returns this [Vec] that is translated by the provided amount.
      * @param dx The x offset.
@@ -53,6 +47,11 @@ public data class Vec(val x: Double, val y: Double) {
     }
 
     public companion object {
+        /**
+         * A [Vec] at (0.0, 0.0)
+         */
+        public val zero: Vec = Vec(0.0, 0.0)
+
         /**
          * Calculates the straight-line distance between two vectors.
          */

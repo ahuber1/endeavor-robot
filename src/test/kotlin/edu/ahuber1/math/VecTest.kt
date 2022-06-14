@@ -14,8 +14,8 @@ internal class VecTest {
         data class TestCase(val point: Vec, val dx: Double, val dy: Double, val expected: Vec)
 
         val testCases = arrayOf(
-            TestCase(Vec(), 10.0, 20.0, Vec(10.0, 20.0)),
-            TestCase(Vec(10.0, 20.0), -10.0, -20.0, Vec()),
+            TestCase(Vec.zero, 10.0, 20.0, Vec(10.0, 20.0)),
+            TestCase(Vec(10.0, 20.0), -10.0, -20.0, Vec.zero),
         )
 
         testCases.testAll {
@@ -29,8 +29,8 @@ internal class VecTest {
         data class TestCase(val point: Vec, val other: Vec, val expected: Vec)
 
         val testCases = arrayOf(
-            TestCase(Vec(), Vec(10.0, 20.0), Vec(10.0, 20.0)),
-            TestCase(Vec(10.0, 20.0), Vec(-10.0, -20.0), Vec()),
+            TestCase(Vec.zero, Vec(10.0, 20.0), Vec(10.0, 20.0)),
+            TestCase(Vec(10.0, 20.0), Vec(-10.0, -20.0), Vec.zero),
         )
 
         testCases.testAll {
@@ -44,8 +44,8 @@ internal class VecTest {
         data class TestCase(val point: Vec, val other: Vec, val expected: Vec)
 
         val testCases = arrayOf(
-            TestCase(Vec(), Vec(-10.0, -20.0), Vec(10.0, 20.0)),
-            TestCase(Vec(10.0, 20.0), Vec(10.0, 20.0), Vec()),
+            TestCase(Vec.zero, Vec(-10.0, -20.0), Vec(10.0, 20.0)),
+            TestCase(Vec(10.0, 20.0), Vec(10.0, 20.0), Vec.zero),
         )
 
         testCases.testAll {
@@ -59,12 +59,12 @@ internal class VecTest {
         data class TestCase(val p1: Vec, val p2: Vec, val expected: Double)
 
         val testCases = arrayOf(
-            TestCase(Vec(), Vec(0.0, 10.0), 10.0),
-            TestCase(Vec(), Vec(10.0, 0.0), 10.0),
-            TestCase(Vec(), Vec(0.0, -10.0), 10.0),
-            TestCase(Vec(), Vec(-10.0, 0.0), 10.0),
-            TestCase(Vec(), Vec(5.0, 5.0), 7.0710678118654755),
-            TestCase(Vec(), Vec(-5.0, -5.0), 7.0710678118654755)
+            TestCase(Vec.zero, Vec(0.0, 10.0), 10.0),
+            TestCase(Vec.zero, Vec(10.0, 0.0), 10.0),
+            TestCase(Vec.zero, Vec(0.0, -10.0), 10.0),
+            TestCase(Vec.zero, Vec(-10.0, 0.0), 10.0),
+            TestCase(Vec.zero, Vec(5.0, 5.0), 7.0710678118654755),
+            TestCase(Vec.zero, Vec(-5.0, -5.0), 7.0710678118654755)
         )
 
         testCases.testAll {
