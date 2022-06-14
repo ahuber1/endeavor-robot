@@ -1,6 +1,8 @@
 package edu.ahuber1.math
 
 import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -36,6 +38,18 @@ public data class Vec(val x: Double, val y: Double) {
      */
     public operator fun minus(other: Vec): Vec {
         return translate(-other.x, -other.y)
+    }
+
+    /**
+     * Rotates this [Vec] around a pivot.
+     * @param pivot The pivot point.
+     * @param angleRadians The angle by which to rotate in radians.
+     */
+    public fun rotateAround(pivot: Vec, angleRadians: Double): Vec {
+        val translated = this - pivot
+        val newX = translated.x * cos(angleRadians) - translated.y * sin(angleRadians)
+        val newY = translated.x * sin(angleRadians) - translated.y * cos(angleRadians)
+        return Vec(newX + pivot.x, newY + pivot.y)
     }
 
     public companion object {

@@ -2,19 +2,10 @@ package edu.ahuber1.math
 
 import kotlin.math.abs
 import kotlin.math.acos
-import kotlin.math.cos
-import kotlin.math.sin
 
-/**
- * Calculates a position [distance] units away from [from] at an angle of [angleRadians].
- * @param from The starting point.
- * @param distance The distance between [from] and the [Vec] this method returns.
- * @param angleRadians The angle between [from] and the [Vec] this method returns in radians.
- */
-public fun projectPoint(from: Vec, angleRadians: Double, distance: Double): Vec {
-    val dx = distance * cos(angleRadians)
-    val dy = distance * sin(angleRadians)
-    return from.translate(dx, dy)
+public fun projectPoint(from: Vec, distance: Double, angleRadians: Double): Vec {
+    val northPoint = from.translate(distance, 0.0)
+    return northPoint.rotateAround(from, angleRadians)
 }
 
 /**

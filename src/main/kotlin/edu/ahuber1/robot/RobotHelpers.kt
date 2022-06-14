@@ -4,7 +4,7 @@ import edu.ahuber1.math.*
 import robocode.Robot
 import robocode.StatusEvent
 import kotlin.math.abs
-import kotlin.math.atan
+import kotlin.math.atan2
 
 /**
  * The center point of the battlefield.
@@ -98,28 +98,4 @@ public fun getFarthestWall(
 ): Heading {
     return getStraightLineDistanceToWalls(location, walls, battlefieldSize).maxByOrNull { it.value }?.key
         ?: error("There are no walls to choose from.")
-}
-
-/**
- * Returns the shortest rotation angle of a beam to make the beam aim at an enemy.
- * @param robotLocation The current location of the robot emitting the beam.
- * @param beamHeadingRadians The beam's heading in radians.
- * @param enemyLocation The location of the enemy.
- */
-public fun getShortestBeamRotationAngle(robotLocation: Vec, beamHeadingRadians: Double, enemyLocation: Vec): Double {
-    val distanceToEnemy = Vec.distance(robotLocation, enemyLocation)
-    val gunTipLocation = projectPoint(robotLocation, beamHeadingRadians, distanceToEnemy)
-
-    val lineToGunTip = Line(robotLocation, gunTipLocation)
-    val lineToEnemy = Line(robotLocation, enemyLocation)
-
-    val angle1 = atan((lineToGunTip.slope - lineToEnemy.slope) / (1 + lineToGunTip.slope * lineToEnemy.slope))
-    val angle2 = (2 * Math.PI) - angle1
-
-    val distance1 = Vec.distance(enemyLocation, projectPoint(robotLocation, angle1, distanceToEnemy))
-    val distance2 = Vec.distance(enemyLocation, projectPoint(robotLocation, angle2, distanceToEnemy))
-
-    val shortestAngle = if (distance1 < distance2) angle1 else angle2
-    println("Beam with shortest rotation angle of ${toDegrees(shortestAngle)} ends at ${projectPoint(robotLocation, shortestAngle, distanceToEnemy)}")
-    return shortestAngle
 }

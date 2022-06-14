@@ -15,29 +15,10 @@ public class Endeavor : TeamRobot() {
 
     private val lock = ReentrantLock()
     private val enemies = HashMap<String, Enemy>()
-
-    private var status: StatusEvent? = null
     private var radarRotationDirection: RotationDirection? = null
 
-    override fun onStatus(e: StatusEvent?) {
-        super.onStatus(e)
-
-        if (e == null) {
-            return
-        }
-
-        lock.withLock {
-            if (e.robotLocation != status?.robotLocation) {
-                println("Current location: ${e.robotLocation}")
-            }
-
-            this.status = e
-        }
-    }
-
-    override fun onDeath(event: DeathEvent?) {
-        super.onDeath(event)
-    }
+    private inline val currentLocation: Vec
+        get() = Vec(x, y)
 
     override fun onHitRobot(event: HitRobotEvent?) {
         super.onHitRobot(event)
@@ -47,9 +28,8 @@ public class Endeavor : TeamRobot() {
         }
 
         lock.withLock {
-            val status = this.status ?: return
             val hitEdges = getHitEdges(headingRadians, event.bearingRadians)
-            val farthest = getFarthestWall(status.robotLocation, battlefieldSize, hitEdges)
+            val farthest = getFarthestWall(currentLocation, battlefieldSize, hitEdges)
 
             val turnAmountRadians = farthest.opposite.radians - headingRadians
             turnRightRadians(turnAmountRadians)
@@ -65,12 +45,11 @@ public class Endeavor : TeamRobot() {
         }
 
         lock.withLock {
-            val status = this.status ?: return
-            val closestWall = getClosestWall(status.robotLocation, battlefieldSize)
-
+            val closestWall = getClosestWall(currentLocation, battlefieldSize)
             val turnAmountRadians = closestWall.opposite.radians - headingRadians
+
             turnRightRadians(turnAmountRadians)
-            ahead(20.0)
+            ahead(distanceRemaining)
         }
     }
 
@@ -82,18 +61,9 @@ public class Endeavor : TeamRobot() {
         }
 
         lock.withLock {
-            val status = this.status ?: return@withLock
-//            println("enemy_distance=${event.distance}")
-//            println("enemy_heading=${event.heading}")
-//            println("enemy_bearing=${event.bearing}")
-//            println("status_heading=${status.status.heading}")
-//            println("status_gun_heading=${status.status.gunHeading}")
-//            println("status_radar_heading=${status.status.radarHeading}")
-
-            val enemyLocation =
-                projectPoint(status.robotLocation, event.headingRadians, event.distance)
-            println("Location of ${event.name} is $enemyLocation")
+            val enemyLocation = projectPoint(currentLocation, event.distance, event.bearingRadians)
             enemies[event.name] = Enemy(event.name, enemyLocation)
+            println("distance=${event.distance} heading=${toDegrees(event.headingRadians)} enemy_location=$enemyLocation")
         }
     }
 
@@ -133,14 +103,12 @@ public class Endeavor : TeamRobot() {
     }
 
     private fun updateRadar() {
-        val status = this.status ?: return
         var radarRotationDirection = this.radarRotationDirection
 
         // If the radar isn't spinning, determine which direction to spin the radar so we reach the battlefield center
         // as quickly as possible.
         if (radarRotationDirection == null) {
-            val shortestAngleRadians =
-                getShortestBeamRotationAngle(status.robotLocation, status.status.radarHeadingRadians, battlefieldCenter)
+            val shortestAngleRadians = Vec.angleRadians(currentLocation, battlefieldCenter)
 
             radarRotationDirection = when {
                 shortestAngleRadians < 0 -> RotationDirection.COUNTERCLOCKWISE
@@ -151,9 +119,10 @@ public class Endeavor : TeamRobot() {
         }
 
         // Start rotating the radar, 45 degrees per turn
+        val rotationAmount = 360.0 // TODO Revert to 45.0
         val rotationAngleRadians = when (radarRotationDirection) {
-            RotationDirection.CLOCKWISE -> toRadians(45.0)
-            RotationDirection.COUNTERCLOCKWISE -> -toRadians(45.0)
+            RotationDirection.CLOCKWISE -> toRadians(rotationAmount)
+            RotationDirection.COUNTERCLOCKWISE -> -toRadians(rotationAmount)
         }
 
         turnRadarRightRadians(rotationAngleRadians)
@@ -191,20 +160,17 @@ public class Endeavor : TeamRobot() {
      * Finds the enemy in [enemies] that will take the shortest amount of time to shoot.
      */
     private fun findShortestEnemyToEngage(): EngagementOrder? {
-        val status = this.status ?: return null
-        val possibleEngagementOrders = enemies.values.asSequence().mapNotNull { createEngagementOrder(status, it) }
-        return possibleEngagementOrders.minByOrNull { it.timeOfImpact }
+        return enemies.values.mapNotNull(::createEngagementOrder).minByOrNull { it.timeOfImpact }
     }
 
     /**
      * Creates an [EngagementOrder] to engage an enemy from Endeavor's current position.
-     * @param status A [StatusEvent] describing Endeavor's current location, heading, etc.
      * @param enemy The enemy to engage.
      */
-    private fun createEngagementOrder(status: StatusEvent, enemy: Enemy): EngagementOrder? {
+    private fun createEngagementOrder(enemy: Enemy): EngagementOrder? {
         // Calculate bullet power
         val minBulletPower = 3.0
-        val bulletPower = when (val distance = Vec.distance(status.robotLocation, enemy.location)) {
+        val bulletPower = when (val distance = Vec.distance(currentLocation, enemy.location)) {
             0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
             else -> min(400.0 / distance, minBulletPower)
         }
@@ -213,15 +179,13 @@ public class Endeavor : TeamRobot() {
         // number of turns needed to reach the target.
         //
         // TODO: As future enhancement, see if we can predict where the enemy will be in the future.
-        println("Determining gun rotation angle")
-        val rotationAmountRadians =
-            getShortestBeamRotationAngle(status.robotLocation, status.status.gunHeadingRadians, enemy.location)
+        val rotationAmountRadians = Vec.angleRadians(currentLocation, enemy.location)
 
         val rotateTurnCount = (rotationAmountRadians) / Rules.GUN_TURN_RATE_RADIANS
         val shootTurnCount =
             when (val shootTurnCountDenominator = Rules.getBulletSpeed(bulletPower) * cos(headingRadians)) {
                 0.0 -> return null // Avoids divide-by-zero error
-                else -> (status.robotLocation.x + enemy.location.x) / shootTurnCountDenominator
+                else -> (currentLocation.x + enemy.location.x) / shootTurnCountDenominator
             }
 
         // Return EngagementOrder
@@ -230,27 +194,21 @@ public class Endeavor : TeamRobot() {
     }
 
     private fun attack(enemyName: String) {
-        val status = this.status ?: return
         val engagementOrder = enemies[enemyName]?.engagementOrder ?: return
 
         // Rotate gun
-        val gunRotationAngleRadians = getShortestBeamRotationAngle(
-            status.robotLocation,
-            status.status.gunHeadingRadians,
-            engagementOrder.enemy.location
-        )
-        println("gunHeading: ${toDegrees(status.status.gunHeadingRadians)}")
-        println("shortestRotationAmount: ${toDegrees(gunRotationAngleRadians)}")
-        turnGunRightRadians(gunRotationAngleRadians)
+        val angleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
+        turnGunRightRadians(angleRadians)
 
-        // Fire gun
-        fire(engagementOrder.bulletPower)
-
-        // Advance on enemy
-        val rotationAngleRadians =
-            getShortestBeamRotationAngle(status.robotLocation, headingRadians, engagementOrder.enemy.location)
-
-        turnRightRadians(rotationAngleRadians)
-        ahead(20.0)
+        // TODO: Undo
+//        // Fire gun
+//        fire(engagementOrder.bulletPower)
+//
+//        // Advance on enemy
+//        val rotationAngleRadians =
+//            getShortestBeamRotationAngle(currentLocation, engagementOrder.enemy.location)
+//
+//        turnRightRadians(rotationAngleRadians)
+//        ahead(20.0)
     }
 }
