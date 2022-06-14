@@ -3,6 +3,12 @@ package edu.ahuber1.math
 import kotlin.math.abs
 import kotlin.math.acos
 
+/**
+ * Projects a point from one position outward at a particular angle.
+ * @param from The point from which to project.
+ * @param distance The distance between [from] and the projected point.
+ * @param angleRadians The angle which to project the point in radians.
+ */
 public fun projectPoint(from: Vec, distance: Double, angleRadians: Double): Vec {
     val northPoint = from.translate(distance, 0.0)
     return northPoint.rotateAround(from, angleRadians)

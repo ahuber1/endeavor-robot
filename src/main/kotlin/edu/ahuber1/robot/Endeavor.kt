@@ -150,24 +150,9 @@ public class Endeavor : TeamRobot() {
      * Finds the enemy in [enemies] that will take the shortest amount of time to shoot.
      */
     private fun findShortestEnemyToEngage(): EngagementOrder? {
-        return enemies.values.mapNotNull(::createEngagementOrder)
+        // TODO: Revise algorithm to predict where the enemy will be in the future.
+        return enemies.values.map { EngagementOrder(it, 3.0) }
             .minByOrNull { Vec.distance(it.enemy.location, currentLocation) }
-    }
-
-    /**
-     * Creates an [EngagementOrder] to engage an enemy from Endeavor's current position.
-     * @param enemy The enemy to engage.
-     */
-    private fun createEngagementOrder(enemy: Enemy): EngagementOrder? {
-        // Calculate bullet power
-//        val minBulletPower = 3.0
-//        val bulletPower = when (val distance = Vec.distance(currentLocation, enemy.location)) {
-//            0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
-//            else -> min(400.0 / distance, minBulletPower)
-//        }
-
-        // Return EngagementOrder
-        return EngagementOrder(enemy, 3.0)
     }
 
     private fun attack(enemyName: String) {

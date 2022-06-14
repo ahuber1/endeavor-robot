@@ -41,7 +41,7 @@ public data class Vec(val x: Double, val y: Double) {
     }
 
     /**
-     * Rotates this [Vec] around a pivot.
+     * Rotates this [Vec] around a pivot point.
      * @param pivot The pivot point.
      * @param angleRadians The angle by which to rotate in radians.
      */
