@@ -29,11 +29,16 @@ public class Endeavor : TeamRobot() {
 
         lock.withLock {
             val hitEdges = getHitEdges(headingRadians, event.bearingRadians)
-            val farthest = getFarthestWall(currentLocation, battlefieldSize, hitEdges)
+            println("Hit edges: $hitEdges")
 
-            val turnAmountRadians = farthest.opposite.radians - headingRadians
+            val farthest = getFarthestWall(currentLocation, battlefieldSize, hitEdges.opposite)
+            println("Farthest: $farthest")
+
+            val turnAmountRadians = farthest.radians - headingRadians
+            println("Turn amount: ${toDegrees(turnAmountRadians)}")
+
             turnRightRadians(turnAmountRadians)
-            ahead(20.0)
+            ahead(advanceDistance)
         }
     }
 
@@ -49,7 +54,7 @@ public class Endeavor : TeamRobot() {
             val turnAmountRadians = closestWall.opposite.radians - headingRadians
 
             turnRightRadians(turnAmountRadians)
-            ahead(distanceRemaining)
+            ahead(advanceDistance)
         }
     }
 
@@ -64,7 +69,6 @@ public class Endeavor : TeamRobot() {
             val enemyLocation = projectPoint(currentLocation, event.distance, event.bearingRadians)
             enemies[event.name] =
                 enemies[event.name]?.copy(location = enemyLocation) ?: Enemy(event.name, enemyLocation)
-            println("distance=${event.distance} heading=${toDegrees(event.headingRadians)} enemy_location=$enemyLocation")
         }
     }
 
@@ -152,7 +156,6 @@ public class Endeavor : TeamRobot() {
             val entry = iterator.next()
             val value = entry.value
             if (value.engagementOrder != null && value.engagementOrder.timeOfImpact >= time) {
-                println("Engagement order for ${value.name} expired")
                 entry.setValue(value.copy(engagementOrder = null))
             }
         }
@@ -162,7 +165,7 @@ public class Endeavor : TeamRobot() {
      * Finds the enemy in [enemies] that will take the shortest amount of time to shoot.
      */
     private fun findShortestEnemyToEngage(): EngagementOrder? {
-        return enemies.values.mapNotNull(::createEngagementOrder).minByOrNull { it.timeOfImpact }
+        return enemies.values.mapNotNull(::createEngagementOrder).maxByOrNull { it.timeOfImpact }
     }
 
     /**
@@ -209,9 +212,12 @@ public class Endeavor : TeamRobot() {
         val rotationAngleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
         turnRightRadians(rotationAngleRadians)
 
-        val advanceDistance = 20.0
-        if (Vec.distance(engagementOrder.enemy.location, currentLocation) > advanceDistance * 2) {
+        if (Vec.distance(engagementOrder.enemy.location, currentLocation) > 120) {
             ahead(advanceDistance)
         }
+    }
+
+    public companion object {
+        private const val advanceDistance: Double = 20.0
     }
 }
