@@ -62,7 +62,8 @@ public class Endeavor : TeamRobot() {
 
         lock.withLock {
             val enemyLocation = projectPoint(currentLocation, event.distance, event.bearingRadians)
-            enemies[event.name] = Enemy(event.name, enemyLocation)
+            enemies[event.name] =
+                enemies[event.name]?.copy(location = enemyLocation) ?: Enemy(event.name, enemyLocation)
             println("distance=${event.distance} heading=${toDegrees(event.headingRadians)} enemy_location=$enemyLocation")
         }
     }
@@ -151,6 +152,7 @@ public class Endeavor : TeamRobot() {
             val entry = iterator.next()
             val value = entry.value
             if (value.engagementOrder != null && value.engagementOrder.timeOfImpact >= time) {
+                println("Engagement order for ${value.name} expired")
                 entry.setValue(value.copy(engagementOrder = null))
             }
         }
@@ -200,15 +202,16 @@ public class Endeavor : TeamRobot() {
         val angleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
         turnGunRightRadians(angleRadians)
 
-        // TODO: Undo
-//        // Fire gun
-//        fire(engagementOrder.bulletPower)
-//
-//        // Advance on enemy
-//        val rotationAngleRadians =
-//            getShortestBeamRotationAngle(currentLocation, engagementOrder.enemy.location)
-//
-//        turnRightRadians(rotationAngleRadians)
-//        ahead(20.0)
+        // Fire gun
+        fire(engagementOrder.bulletPower)
+
+        // Advance on enemy
+        val rotationAngleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
+        turnRightRadians(rotationAngleRadians)
+
+        val advanceDistance = 20.0
+        if (Vec.distance(engagementOrder.enemy.location, currentLocation) > advanceDistance * 2) {
+            ahead(advanceDistance)
+        }
     }
 }
