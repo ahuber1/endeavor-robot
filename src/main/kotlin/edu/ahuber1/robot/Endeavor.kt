@@ -1,17 +1,18 @@
 package edu.ahuber1.robot
 
-import edu.ahuber1.math.*
+import edu.ahuber1.math.Vec
+import edu.ahuber1.math.projectPoint
+import edu.ahuber1.math.toDegrees
+import edu.ahuber1.math.toRadians
 import robocode.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import kotlin.math.cos
-import kotlin.math.min
 
 public class Endeavor : TeamRobot() {
 
     private enum class RotationDirection { CLOCKWISE, COUNTERCLOCKWISE }
     private data class Enemy(val name: String, val location: Vec, val engagementOrder: EngagementOrder? = null)
-    private data class EngagementOrder(val enemy: Enemy, val bulletPower: Double, val timeOfImpact: Double)
+    private data class EngagementOrder(val enemy: Enemy, val bulletPower: Double)
 
     private val lock = ReentrantLock()
     private val enemies = HashMap<String, Enemy>()
@@ -137,7 +138,6 @@ public class Endeavor : TeamRobot() {
      * Analyzes [enemies] and returns the name of the enemy to engage or `null` if no enemy should be engaged.
      */
     private fun selectEnemyToEngage(): String? {
-        clearExpiredEngagementOrders()
         val engagementOrder = findShortestEnemyToEngage() ?: return null
 
         enemies[engagementOrder.enemy.name] =
@@ -147,25 +147,10 @@ public class Endeavor : TeamRobot() {
     }
 
     /**
-     * Clears any engagement orders that have expired.
-     */
-    private fun clearExpiredEngagementOrders() {
-        val iterator = enemies.iterator()
-
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            val value = entry.value
-            if (value.engagementOrder != null && value.engagementOrder.timeOfImpact >= time) {
-                entry.setValue(value.copy(engagementOrder = null))
-            }
-        }
-    }
-
-    /**
      * Finds the enemy in [enemies] that will take the shortest amount of time to shoot.
      */
     private fun findShortestEnemyToEngage(): EngagementOrder? {
-        return enemies.values.mapNotNull(::createEngagementOrder).maxByOrNull { it.timeOfImpact }
+        return enemies.values.mapNotNull(::createEngagementOrder).minByOrNull { Vec.distance(it.enemy.location, currentLocation) }
     }
 
     /**
@@ -174,28 +159,14 @@ public class Endeavor : TeamRobot() {
      */
     private fun createEngagementOrder(enemy: Enemy): EngagementOrder? {
         // Calculate bullet power
-        val minBulletPower = 3.0
-        val bulletPower = when (val distance = Vec.distance(currentLocation, enemy.location)) {
-            0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
-            else -> min(400.0 / distance, minBulletPower)
-        }
-
-        // Calculate the number of turns needed to rotate the gun barrel so we're aiming at the target and the
-        // number of turns needed to reach the target.
-        //
-        // TODO: As future enhancement, see if we can predict where the enemy will be in the future.
-        val rotationAmountRadians = Vec.angleRadians(currentLocation, enemy.location)
-
-        val rotateTurnCount = (rotationAmountRadians) / Rules.GUN_TURN_RATE_RADIANS
-        val shootTurnCount =
-            when (val shootTurnCountDenominator = Rules.getBulletSpeed(bulletPower) * cos(headingRadians)) {
-                0.0 -> return null // Avoids divide-by-zero error
-                else -> (currentLocation.x + enemy.location.x) / shootTurnCountDenominator
-            }
+//        val minBulletPower = 3.0
+//        val bulletPower = when (val distance = Vec.distance(currentLocation, enemy.location)) {
+//            0.0 -> minBulletPower // Avoids divide-by-zero error when calculating bullet power.
+//            else -> min(400.0 / distance, minBulletPower)
+//        }
 
         // Return EngagementOrder
-        val timeOfImpact = time.toDouble() + rotateTurnCount + shootTurnCount
-        return EngagementOrder(enemy, bulletPower, timeOfImpact)
+        return EngagementOrder(enemy, 3.0)
     }
 
     private fun attack(enemyName: String) {
@@ -212,7 +183,9 @@ public class Endeavor : TeamRobot() {
         val rotationAngleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
         turnRightRadians(rotationAngleRadians)
 
-        if (Vec.distance(engagementOrder.enemy.location, currentLocation) > 120) {
+        val destination = projectPoint(currentLocation, advanceDistance, headingRadians)
+        val canAdvance = enemies.values.none { Vec.distance(destination, it.location) <= 120 }
+        if (canAdvance) {
             ahead(advanceDistance)
         }
     }
