@@ -1,6 +1,6 @@
 package edu.ahuber1.robot
 
-import edu.ahuber1.math.Vec
+import edu.ahuber1.math.Point
 import edu.ahuber1.math.projectPoint
 import edu.ahuber1.math.toDegrees
 import edu.ahuber1.math.toRadians
@@ -11,15 +11,15 @@ import kotlin.concurrent.withLock
 public class Endeavor : TeamRobot() {
 
     private enum class RotationDirection { CLOCKWISE, COUNTERCLOCKWISE }
-    private data class Enemy(val name: String, val location: Vec, val engagementOrder: EngagementOrder? = null)
+    private data class Enemy(val name: String, val location: Point, val engagementOrder: EngagementOrder? = null)
     private data class EngagementOrder(val enemy: Enemy, val bulletPower: Double)
 
     private val lock = ReentrantLock()
     private val enemies = HashMap<String, Enemy>()
     private var radarRotationDirection: RotationDirection? = null
 
-    private inline val currentLocation: Vec
-        get() = Vec(x, y)
+    private inline val currentLocation: Point
+        get() = Point(x, y)
 
     override fun onHitRobot(event: HitRobotEvent?) {
         super.onHitRobot(event)
@@ -114,7 +114,7 @@ public class Endeavor : TeamRobot() {
         // If the radar isn't spinning, determine which direction to spin the radar so we reach the battlefield center
         // as quickly as possible.
         if (radarRotationDirection == null) {
-            val shortestAngleRadians = Vec.angleRadians(currentLocation, battlefieldCenter)
+            val shortestAngleRadians = Point.angleRadians(currentLocation, battlefieldCenter)
 
             radarRotationDirection = when {
                 shortestAngleRadians < 0 -> RotationDirection.COUNTERCLOCKWISE
@@ -152,25 +152,25 @@ public class Endeavor : TeamRobot() {
     private fun findShortestEnemyToEngage(): EngagementOrder? {
         // TODO: Revise algorithm to predict where the enemy will be in the future.
         return enemies.values.map { EngagementOrder(it, 3.0) }
-            .minByOrNull { Vec.distance(it.enemy.location, currentLocation) }
+            .minByOrNull { Point.distance(it.enemy.location, currentLocation) }
     }
 
     private fun attack(enemyName: String) {
         val engagementOrder = enemies[enemyName]?.engagementOrder ?: return
 
         // Rotate gun
-        val angleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
+        val angleRadians = Point.angleRadians(currentLocation, engagementOrder.enemy.location)
         turnGunRightRadians(angleRadians)
 
         // Fire gun
         fire(engagementOrder.bulletPower)
 
         // Advance on enemy
-        val rotationAngleRadians = Vec.angleRadians(currentLocation, engagementOrder.enemy.location)
+        val rotationAngleRadians = Point.angleRadians(currentLocation, engagementOrder.enemy.location)
         turnRightRadians(rotationAngleRadians)
 
         val destination = projectPoint(currentLocation, advanceDistance, headingRadians)
-        val canAdvance = enemies.values.none { Vec.distance(destination, it.location) <= 120 }
+        val canAdvance = enemies.values.none { Point.distance(destination, it.location) <= 120 }
         if (canAdvance) {
             ahead(advanceDistance)
         }

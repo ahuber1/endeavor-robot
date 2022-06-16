@@ -9,16 +9,16 @@ internal class TrigonometryTest {
 
     @Test
     fun testProjectPoint() {
-        data class TestCase(val origin: Vec, val distance: Double, val headingRadians: Double, val expected: Vec)
+        data class TestCase(val origin: Point, val distance: Double, val headingRadians: Double, val expected: Point)
 
-        val distance45Degrees = Vec.distance(Vec.zero, Vec(5.0, 5.0))
+        val distance45Degrees = Point.distance(Point.zero, Point(5.0, 5.0))
 
         val testCases = arrayOf(
-            TestCase(Vec.zero, 10.0, 0.0, Vec(10.0, 0.0)),
-            TestCase(Vec.zero, distance45Degrees, toRadians(45.0), Vec(5.0, 5.0)),
-            TestCase(Vec.zero, 10.0, toRadians(90.0), Vec(0.0, 10.0)),
-            TestCase(Vec.zero, distance45Degrees, -toRadians(45.0), Vec(5.0, -5.0)),
-            TestCase(Vec.zero, 10.0, -toRadians(90.0), Vec(0.0, -10.0)),
+            TestCase(Point.zero, 10.0, 0.0, Point(10.0, 0.0)),
+            TestCase(Point.zero, distance45Degrees, toRadians(45.0), Point(5.0, 5.0)),
+            TestCase(Point.zero, 10.0, toRadians(90.0), Point(0.0, 10.0)),
+            TestCase(Point.zero, distance45Degrees, -toRadians(45.0), Point(5.0, -5.0)),
+            TestCase(Point.zero, 10.0, -toRadians(90.0), Point(0.0, -10.0)),
         )
 
         testCases.testAll {
@@ -32,15 +32,15 @@ internal class TrigonometryTest {
 
     @Test
     fun testCalculateArcAngleRadians() {
-        data class TestCase(val c: Vec, val p1: Vec, val p2: Vec, val expected: Double)
+        data class TestCase(val c: Point, val p1: Point, val p2: Point, val expected: Double)
 
-        val distance45Degrees = Vec.distance(Vec.zero, Vec(5.0, 5.0))
+        val distance45Degrees = Point.distance(Point.zero, Point(5.0, 5.0))
 
         val testCases = arrayOf(
-            TestCase(Vec.zero, Vec(0.0, 10.0), Vec(10.0, 0.0), toRadians(90.0)),
-            TestCase(Vec.zero, Vec(0.0, 10.0), Vec(distance45Degrees, distance45Degrees), toRadians(45.0)),
-            TestCase(Vec.zero, Vec(0.0, 10.0), Vec(-10.0, 0.0), toRadians(90.0)),
-            TestCase(Vec.zero, Vec(0.0, 10.0), Vec(-distance45Degrees, distance45Degrees), toRadians(45.0)),
+            TestCase(Point.zero, Point(0.0, 10.0), Point(10.0, 0.0), toRadians(90.0)),
+            TestCase(Point.zero, Point(0.0, 10.0), Point(distance45Degrees, distance45Degrees), toRadians(45.0)),
+            TestCase(Point.zero, Point(0.0, 10.0), Point(-10.0, 0.0), toRadians(90.0)),
+            TestCase(Point.zero, Point(0.0, 10.0), Point(-distance45Degrees, distance45Degrees), toRadians(45.0)),
         )
 
         testCases.testAll {

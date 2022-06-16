@@ -4,13 +4,12 @@ import edu.ahuber1.math.*
 import robocode.Robot
 import robocode.StatusEvent
 import kotlin.math.abs
-import kotlin.math.atan2
 
 /**
  * The center point of the battlefield.
  */
-public inline val Robot.battlefieldCenter: Vec
-    get() = Vec(battleFieldWidth / 2, battleFieldHeight / 2)
+public inline val Robot.battlefieldCenter: Point
+    get() = Point(battleFieldWidth / 2, battleFieldHeight / 2)
 
 /**
  * The size of the battlefield.
@@ -21,8 +20,8 @@ public inline val Robot.battlefieldSize: Size
 /**
  * The location of the robot.
  */
-public inline val StatusEvent.robotLocation: Vec
-    get() = Vec(status.x, status.y)
+public inline val StatusEvent.robotLocation: Point
+    get() = Point(status.x, status.y)
 
 /**
  * Determines the edges where another robot hit your robot.
@@ -50,7 +49,7 @@ public fun getHitEdges(headingRadians: Double, otherRobotBearingRadians: Double)
  * @param battlefieldSize The size of the battlefield.
  */
 public fun getStraightLineDistanceToWalls(
-    location: Vec,
+    location: Point,
     walls: Iterable<Heading>,
     battlefieldSize: Size
 ): Map<Heading, Double> {
@@ -74,7 +73,7 @@ public fun getStraightLineDistanceToWalls(
  * @see getFarthestWall
  */
 public fun getClosestWall(
-    location: Vec,
+    location: Point,
     battlefieldSize: Size,
     walls: Iterable<Heading> = Heading.values().asIterable()
 ): Heading {
@@ -92,7 +91,7 @@ public fun getClosestWall(
  * @see getClosestWall
  */
 public fun getFarthestWall(
-    location: Vec,
+    location: Point,
     battlefieldSize: Size,
     walls: Iterable<Heading> = Heading.values().asIterable()
 ): Heading {

@@ -9,7 +9,7 @@ import kotlin.math.acos
  * @param distance The distance between [from] and the projected point.
  * @param angleRadians The angle which to project the point in radians.
  */
-public fun projectPoint(from: Vec, distance: Double, angleRadians: Double): Vec {
+public fun projectPoint(from: Point, distance: Double, angleRadians: Double): Point {
     val northPoint = from.translate(distance, 0.0)
     return northPoint.rotateAround(from, angleRadians)
 }
@@ -20,10 +20,10 @@ public fun projectPoint(from: Vec, distance: Double, angleRadians: Double): Vec 
  * @param point1 The first point along the circle.
  * @param point2 The second point along the circle.
  */
-public fun calculateArcAngleRadians(center: Vec, point1: Vec, point2: Vec): Double {
+public fun calculateArcAngleRadians(center: Point, point1: Point, point2: Point): Double {
     // https://math.stackexchange.com/questions/830413/calculating-the-arc-length-of-a-circle-segment
-    val distance = Vec.distance(point1, point2)
-    val radius = Vec.distance(center, point1)
+    val distance = Point.distance(point1, point2)
+    val radius = Point.distance(center, point1)
     return acos(1.0 - (distance.squared / (2 * radius.squared)))
 }
 
