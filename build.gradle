@@ -14,8 +14,9 @@ version = '1.0-SNAPSHOT'
 
 dependencies {
     implementation fileTree(dir: 'src/main/resources/', include: ['*.jar'])
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+
 }
 
 test {
@@ -39,8 +40,8 @@ robocode {
 
     robots {
         register('Endeavor') {
-            classPath = 'edu.ahuber1.robot.Endeavor'
-            version = '1.1'
+            classPath = 'edu.ahuber1.robot.EndeavorV2'
+            version = '2.0'
             description = 'What an Endeavor!'
         }
     }
