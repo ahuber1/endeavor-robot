@@ -9,6 +9,9 @@ import kotlin.math.*
 
 public class EndeavorV2 : TeamRobot() {
 
+    private inline val Point.isOnBattlefield: Boolean
+        get() = x in 0.0..battleFieldWidth && y in 0.0..battleFieldHeight
+
     override fun run() {
         super.run()
 
@@ -22,24 +25,29 @@ public class EndeavorV2 : TeamRobot() {
 
     override fun onScannedRobot(event: ScannedRobotEvent?) {
         super.onScannedRobot(event)
-
         if (event == null) {
             return
         }
 
         val currentLocation = Point(x, y)
         val enemyLocation = getEnemyLocation(currentLocation, headingRadians, event.bearingRadians, event.distance)
-        val wantHeadingRadians = getEnemyAbsoluteHeadingRadians(currentLocation, enemyLocation)
-        val rotationAngle = normalizeRadians(wantHeadingRadians - headingRadians)
-        val gunRotationAngle = normalizeRadians(wantHeadingRadians - gunHeadingRadians)
+        val wantHeading = getAbsoluteHeading(currentLocation, enemyLocation)
+        val rotationAngle = normalizeRadians(wantHeading - heading)
+        val gunRotationAngle = normalizeRadians(wantHeading - gunHeading)
 
-        turnRightRadians(rotationAngle)
-        turnGunRightRadians(gunRotationAngle)
+        // Fire gun first
+        turnGunRight(gunRotationAngle)
         fire(Rules.MIN_BULLET_POWER)
-        ahead((currentLocation distanceTo enemyLocation) - 100.0)
+
+        // Then move tank
+        turnRight(rotationAngle)
+        ahead((currentLocation distanceTo enemyLocation) - SAFE_DISTANCE)
     }
 
     public companion object {
+        private const val SAFE_DISTANCE = 100.0
+        private const val ENCIRCLING_STEP_ANGLE = 45.0
+
         private fun getEnemyLocation(
             yourLocation: Point,
             yourHeadingRadians: Double,
@@ -50,7 +58,7 @@ public class EndeavorV2 : TeamRobot() {
             return yourLocation.translate(distance * sin(angle), distance * cos(angle))
         }
 
-        private fun getEnemyAbsoluteHeadingRadians(yourLocation: Point, theirLocation: Point): Double {
+        private fun getAbsoluteHeading(yourLocation: Point, theirLocation: Point): Double {
             val leftmostPoint: Point
             val rightmostPoint: Point
             val correctionAmount: Double // The amount by which we have to correct the calculated angle.
@@ -58,7 +66,7 @@ public class EndeavorV2 : TeamRobot() {
             if (theirLocation.x < yourLocation.x) {
                 leftmostPoint = theirLocation
                 rightmostPoint = yourLocation
-                correctionAmount = -Math.PI // -180 degrees
+                correctionAmount = -180.0
             } else {
                 leftmostPoint = yourLocation
                 rightmostPoint = theirLocation
@@ -69,7 +77,7 @@ public class EndeavorV2 : TeamRobot() {
             val northPoint = leftmostPoint.translate(0.0, radius)
             val distance = northPoint distanceTo rightmostPoint
             val angleRadians = (2 * asin((0.5 * distance) / radius)) + correctionAmount
-            return normalizeRadians(angleRadians)
+            return Math.toDegrees(normalizeRadians(angleRadians))
         }
 
         private fun normalizeRadians(angleRadians: Double): Double {
@@ -88,5 +96,20 @@ public class EndeavorV2 : TeamRobot() {
 
             return normalized
         }
+
+//        private fun getEncirclingPointsClockwise(center: Point, radius: Double): List<Pair<Double, Point>> {
+//            val points = ArrayList<Pair<Double, Point>>(((360 / ENCIRCLING_STEP_ANGLE) + 1).toInt())
+//            var theta = 0.0
+//            while (theta <= 360) {
+//                val thetaRadians = Math.toRadians(theta)
+//                val dx = radius * sin(thetaRadians)
+//                val dy = radius * cos(thetaRadians)
+//                points.add(theta to center.translate(dx, dy))
+//                theta += ENCIRCLING_STEP_ANGLE
+//            }
+//
+//            return points
+//        }
+
     }
 }
