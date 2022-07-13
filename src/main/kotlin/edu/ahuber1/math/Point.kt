@@ -49,7 +49,11 @@ public data class Point(val x: Double, val y: Double) {
     }
 
     public infix fun distanceTo(other: Point): Double {
-        return sqrt((other.x - this.x).squared + (other.y - this.y).squared)
+        return distanceTo(other.x, other.y)
+    }
+
+    public fun distanceTo(otherX: Double, otherY: Double): Double {
+        return sqrt((otherX - this.x).squared + (otherY - this.y).squared)
     }
 
     public companion object {
