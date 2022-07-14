@@ -6,6 +6,7 @@ import robocode.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
+import kotlin.math.absoluteValue
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
@@ -162,7 +163,7 @@ public class EndeavorV2 : TeamRobot() {
         val startHeading = heading
 
         val absoluteHeading = calculateAbsoluteHeading(startLocation, endLocation)
-        val turnAmount = normalizeDegrees(absoluteHeading - startHeading, true)
+        val turnAmount = normalizeRotationAngle(absoluteHeading - startHeading)
 
         turnRight(turnAmount)
         ahead(startLocation distanceTo endLocation)
@@ -174,7 +175,7 @@ public class EndeavorV2 : TeamRobot() {
         val startGunHeading = gunHeading
 
         val absoluteGunHeading = calculateAbsoluteHeading(startLocation, enemyLocation)
-        val gunTurnAmount = normalizeDegrees(absoluteGunHeading - startGunHeading, true)
+        val gunTurnAmount = normalizeRotationAngle(absoluteGunHeading - startGunHeading)
 
         turnGunRight(gunTurnAmount)
         fire(firePower)
@@ -267,6 +268,18 @@ public class EndeavorV2 : TeamRobot() {
             return when {
                 angleDegrees.isFinite() -> normalizeDegrees(angleDegrees, true)
                 else -> 0.0
+            }
+        }
+
+        private fun normalizeRotationAngle(angle: Double): Double {
+            val angle1 = normalizeDegrees(angle, true)
+            val angle2 = when (angle1 <= 0.0) {
+                true -> angle1 + 360.0
+                else -> angle1 - 360.0
+            }
+            return when (angle1.absoluteValue < angle2.absoluteValue) {
+                true -> angle1
+                else -> angle2
             }
         }
 
