@@ -34,7 +34,7 @@ public class EndeavorV2 : TeamRobot() {
                 val destination = determineDestination(enemyInfo)
 
                 if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
-                    enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, ENCIRCLE_POINT_COUNT)
+                    enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, Values.ENCIRCLE_POINT_COUNT)
                     return@withLock
                 }
 
@@ -67,7 +67,7 @@ public class EndeavorV2 : TeamRobot() {
             val rotationDirection = enemyInfo.rotationDirection ?: determineRotationDirection(enemyLocation)
 
             enemyInfo.location = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
-            enemyInfo.setRotationDirection(rotationDirection, ENCIRCLE_POINT_COUNT)
+            enemyInfo.setRotationDirection(rotationDirection, Values.ENCIRCLE_POINT_COUNT)
             this.enemyInfo = enemyInfo
         }
     }
@@ -97,7 +97,10 @@ public class EndeavorV2 : TeamRobot() {
 
         enemyLock.withLock {
             // Reverse rotation direction
-            this.enemyInfo?.setRotationDirection(this.enemyInfo?.rotationDirection?.opposite, ENCIRCLE_POINT_COUNT)
+            this.enemyInfo?.setRotationDirection(
+                this.enemyInfo?.rotationDirection?.opposite,
+                Values.ENCIRCLE_POINT_COUNT
+            )
         }
     }
 
@@ -147,14 +150,17 @@ public class EndeavorV2 : TeamRobot() {
                     val distance = point.distanceTo(x, y)
                     EncirclePoint(point, angle, distance)
                 }
-                .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, DISTANCE_DELTA) }
+                .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, Values.DISTANCE_DELTA) }
 
         // Find the EncirclePoint that is closest to the robot.
         val closestDistance = encirclePoints.minByOrNull { it.distanceFromRobot }?.distanceFromRobot ?: return null
 
         // Find the first point where the distance from the robot to that point equals
         // closestDistance +/- DISTANCE_DELTA, and return it.
-        return encirclePoints.firstOrNull { it.distanceFromRobot.equalsWithinDelta(closestDistance, DISTANCE_DELTA) }
+        return encirclePoints.firstOrNull { it.distanceFromRobot.equalsWithinDelta(
+            closestDistance,
+            Values.DISTANCE_DELTA
+        ) }
     }
 
 
@@ -182,14 +188,6 @@ public class EndeavorV2 : TeamRobot() {
     }
 
     public companion object {
-        private const val SAFE_DISTANCE = 100.0
-        private const val ENCIRCLING_STEP_ANGLE = 45.0
-        private const val TANK_LENGTH = 100.0
-        private const val MAX_ANGLE_PROGRESSION_COUNT = 1 + (360 / ENCIRCLING_STEP_ANGLE.toInt())
-        private const val ENCIRCLE_COUNT = 1 // TODO: Consider making this random
-        private const val ENCIRCLE_POINT_COUNT = MAX_ANGLE_PROGRESSION_COUNT * ENCIRCLE_COUNT
-        private const val DISTANCE_DELTA = 5.0
-
         private fun calculateEnemyLocation(
             yourLocation: Point,
             yourHeading: Double,
@@ -210,16 +208,16 @@ public class EndeavorV2 : TeamRobot() {
                 "\"startAngle\" must be greater than or equal to zero. $startAngle is not."
             }
 
-            require(startAngle % ENCIRCLING_STEP_ANGLE == 0.0) {
-                "\"startAngle\" must divide evenly into \"step\". $startAngle does not divide evenly into $ENCIRCLING_STEP_ANGLE"
+            require(startAngle % Values.ENCIRCLING_STEP_ANGLE == 0.0) {
+                "\"startAngle\" must divide evenly into \"step\". $startAngle does not divide evenly into ${Values.ENCIRCLING_STEP_ANGLE}"
             }
 
-            val angleProgression = ArrayList<Double>(ENCIRCLE_POINT_COUNT)
+            val angleProgression = ArrayList<Double>(Values.ENCIRCLE_POINT_COUNT)
             angleProgression.add(startAngle)
 
             var theta = startAngle
-            while (angleProgression.size < ENCIRCLE_POINT_COUNT) {
-                theta = (theta + ENCIRCLING_STEP_ANGLE) % 360
+            while (angleProgression.size < Values.ENCIRCLE_POINT_COUNT) {
+                theta = (theta + Values.ENCIRCLING_STEP_ANGLE) % 360
                 angleProgression.add(theta)
             }
 
@@ -231,17 +229,17 @@ public class EndeavorV2 : TeamRobot() {
 
         private fun getPointAlongCircle(center: Point, angle: Double): Point {
             val angleRadians = Math.toRadians(angle)
-            return center.translate(SAFE_DISTANCE * sin(angleRadians), SAFE_DISTANCE * cos(angleRadians))
+            return center.translate(Values.SAFE_DISTANCE * sin(angleRadians), Values.SAFE_DISTANCE * cos(angleRadians))
         }
 
         private fun Point.getShortestStraightLineDistanceToWall(
             battleFieldWidth: Double,
             battleFieldHeight: Double
         ): Double {
-            val northDistance = this.y - TANK_LENGTH
-            val southDistance = battleFieldHeight - TANK_LENGTH + this.y
-            val eastDistance = battleFieldWidth - TANK_LENGTH - this.x
-            val westDistance = this.x - TANK_LENGTH
+            val northDistance = this.y - Values.TANK_LENGTH
+            val southDistance = battleFieldHeight - Values.TANK_LENGTH + this.y
+            val eastDistance = battleFieldWidth - Values.TANK_LENGTH - this.x
+            val westDistance = this.x - Values.TANK_LENGTH
             return listOf(northDistance, southDistance, eastDistance, westDistance).filter { it >= 0.0 }.minOrNull()!!
         }
 
