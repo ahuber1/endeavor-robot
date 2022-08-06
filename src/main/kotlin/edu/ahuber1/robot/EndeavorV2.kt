@@ -1,8 +1,8 @@
 package edu.ahuber1.robot
 
+import robocode.*
 import edu.ahuber1.math.Point
 import edu.ahuber1.math.equalsWithinDelta
-import robocode.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
@@ -34,7 +34,7 @@ public class EndeavorV2 : TeamRobot() {
                 val destination = determineDestination(enemyInfo)
 
                 if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
-                    enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, Values.ENCIRCLE_POINT_COUNT)
+                    enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, enemyInfo.encirclePointCount)
                     return@withLock
                 }
 
@@ -67,7 +67,7 @@ public class EndeavorV2 : TeamRobot() {
             val rotationDirection = enemyInfo.rotationDirection ?: determineRotationDirection(enemyLocation)
 
             enemyInfo.location = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
-            enemyInfo.setRotationDirection(rotationDirection, Values.ENCIRCLE_POINT_COUNT)
+            enemyInfo.setRotationDirection(rotationDirection, enemyInfo.encirclePointCount)
             this.enemyInfo = enemyInfo
         }
     }
@@ -99,7 +99,7 @@ public class EndeavorV2 : TeamRobot() {
             // Reverse rotation direction
             this.enemyInfo?.setRotationDirection(
                 this.enemyInfo?.rotationDirection?.opposite,
-                Values.ENCIRCLE_POINT_COUNT
+                this.enemyInfo?.encirclePointCount ?: 0
             )
         }
     }
@@ -113,11 +113,11 @@ public class EndeavorV2 : TeamRobot() {
         val counterClockwiseAngles = clockwiseAngles.reversed()
 
         val averageClockwiseDistance =
-            clockwiseAngles.map { getPointAlongCircle(enemyLocation, it) }
+            clockwiseAngles.map { getPointAlongCircle(enemyLocation, it, Constants.SAFE_DISTANCE_RANGE.last) }
                 .map { it.getShortestStraightLineDistanceToWall(battleFieldWidth, battleFieldHeight) }
                 .average()
         val averageCounterClockwiseDistance =
-            counterClockwiseAngles.map { getPointAlongCircle(enemyLocation, it) }
+            counterClockwiseAngles.map { getPointAlongCircle(enemyLocation, it, Constants.SAFE_DISTANCE_RANGE.last) }
                 .map { it.getShortestStraightLineDistanceToWall(battleFieldWidth, battleFieldHeight) }
                 .average()
 
@@ -133,6 +133,7 @@ public class EndeavorV2 : TeamRobot() {
         val enemyLocation = enemyInfo.location ?: return null
         val rotationDirection = enemyInfo.rotationDirection ?: return null
         val progressionStartAngle = enemyInfo.lastAngle ?: 0.0
+        val safeDistance = Constants.SAFE_DISTANCE_RANGE.random()
 
         // Perform the following steps:
         //
@@ -146,21 +147,23 @@ public class EndeavorV2 : TeamRobot() {
             buildRotationAngleProgression(rotationDirection, progressionStartAngle) // Get list of angles around enemy
                 .distinct() // Remove duplicates
                 .map { angle ->
-                    val point = getPointAlongCircle(enemyLocation, angle)
+                    val point = getPointAlongCircle(enemyLocation, angle, safeDistance)
                     val distance = point.distanceTo(x, y)
                     EncirclePoint(point, angle, distance)
                 }
-                .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, Values.DISTANCE_DELTA) }
+                .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, Constants.DISTANCE_DELTA) }
 
         // Find the EncirclePoint that is closest to the robot.
         val closestDistance = encirclePoints.minByOrNull { it.distanceFromRobot }?.distanceFromRobot ?: return null
 
         // Find the first point where the distance from the robot to that point equals
         // closestDistance +/- DISTANCE_DELTA, and return it.
-        return encirclePoints.firstOrNull { it.distanceFromRobot.equalsWithinDelta(
-            closestDistance,
-            Values.DISTANCE_DELTA
-        ) }
+        return encirclePoints.firstOrNull {
+            it.distanceFromRobot.equalsWithinDelta(
+                closestDistance,
+                Constants.DISTANCE_DELTA
+            )
+        }
     }
 
 
@@ -208,16 +211,16 @@ public class EndeavorV2 : TeamRobot() {
                 "\"startAngle\" must be greater than or equal to zero. $startAngle is not."
             }
 
-            require(startAngle % Values.ENCIRCLING_STEP_ANGLE == 0.0) {
-                "\"startAngle\" must divide evenly into \"step\". $startAngle does not divide evenly into ${Values.ENCIRCLING_STEP_ANGLE}"
+            require(startAngle % Constants.ENCIRCLING_STEP_ANGLE == 0.0) {
+                "\"startAngle\" must divide evenly into \"step\". $startAngle does not divide evenly into ${Constants.ENCIRCLING_STEP_ANGLE}"
             }
 
-            val angleProgression = ArrayList<Double>(Values.ENCIRCLE_POINT_COUNT)
+            val angleProgression = ArrayList<Double>(Constants.FULL_ROTATION_ANGLE_COUNT)
             angleProgression.add(startAngle)
 
             var theta = startAngle
-            while (angleProgression.size < Values.ENCIRCLE_POINT_COUNT) {
-                theta = (theta + Values.ENCIRCLING_STEP_ANGLE) % 360
+            while (angleProgression.size < Constants.FULL_ROTATION_ANGLE_COUNT) {
+                theta = (theta + Constants.ENCIRCLING_STEP_ANGLE) % 360
                 angleProgression.add(theta)
             }
 
@@ -227,19 +230,19 @@ public class EndeavorV2 : TeamRobot() {
             }
         }
 
-        private fun getPointAlongCircle(center: Point, angle: Double): Point {
+        private fun getPointAlongCircle(center: Point, angle: Double, distance: Int): Point {
             val angleRadians = Math.toRadians(angle)
-            return center.translate(Values.SAFE_DISTANCE * sin(angleRadians), Values.SAFE_DISTANCE * cos(angleRadians))
+            return center.translate(distance * sin(angleRadians), distance * cos(angleRadians))
         }
 
         private fun Point.getShortestStraightLineDistanceToWall(
             battleFieldWidth: Double,
             battleFieldHeight: Double
         ): Double {
-            val northDistance = this.y - Values.TANK_LENGTH
-            val southDistance = battleFieldHeight - Values.TANK_LENGTH + this.y
-            val eastDistance = battleFieldWidth - Values.TANK_LENGTH - this.x
-            val westDistance = this.x - Values.TANK_LENGTH
+            val northDistance = (this.y - Constants.TANK_LENGTH).absoluteValue
+            val southDistance = (battleFieldHeight - Constants.TANK_LENGTH + this.y).absoluteValue
+            val eastDistance = (battleFieldWidth - Constants.TANK_LENGTH - this.x).absoluteValue
+            val westDistance = (this.x - Constants.TANK_LENGTH).absoluteValue
             return listOf(northDistance, southDistance, eastDistance, westDistance).filter { it >= 0.0 }.minOrNull()!!
         }
 

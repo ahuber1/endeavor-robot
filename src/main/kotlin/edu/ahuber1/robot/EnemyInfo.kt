@@ -1,8 +1,13 @@
 package edu.ahuber1.robot
 
 import edu.ahuber1.math.Point
+import edu.ahuber1.robot.Constants.ENCIRCLE_COUNT_RANGE
+import edu.ahuber1.robot.Constants.SAFE_DISTANCE_RANGE
+import kotlin.math.ceil
 
 internal class EnemyInfo(val name: String) {
+    private val encircleAmount: Double = encircleAmounts.random()
+
     var location: Point? = null
 
     var lastAngle: Double? = null
@@ -12,6 +17,8 @@ internal class EnemyInfo(val name: String) {
 
     var pointsRemaining = 0
         private set
+
+    val encirclePointCount: Int = ceil(Constants.FULL_ROTATION_ANGLE_COUNT * encircleAmount).toInt()
 
     fun setRotationDirection(rotationDirection: RotationDirection?, encirclePointCount: Int = 0) {
         if (rotationDirection == null) {
@@ -37,4 +44,13 @@ internal class EnemyInfo(val name: String) {
         pointsRemaining--
         return true
     }
+
+    companion object {
+        private val encircleAmounts: List<Double> by lazy {
+            generateSequence(ENCIRCLE_COUNT_RANGE.start) { it + Constants.ENCIRCLE_COUNT_DELTA }
+                .takeWhile { it < SAFE_DISTANCE_RANGE.last }
+                .toList()
+        }
+    }
+
 }
