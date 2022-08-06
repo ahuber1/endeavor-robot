@@ -11,7 +11,7 @@ internal class TrigonometryTest {
     fun testProjectPoint() {
         data class TestCase(val origin: Point, val distance: Double, val headingRadians: Double, val expected: Point)
 
-        val distance45Degrees = Point.distance(Point.zero, Point(5.0, 5.0))
+        val distance45Degrees = Point.zero distanceTo Point(5.0, 5.0)
 
         val testCases = arrayOf(
             TestCase(Point.zero, 10.0, 0.0, Point(10.0, 0.0)),
@@ -34,7 +34,7 @@ internal class TrigonometryTest {
     fun testCalculateArcAngleRadians() {
         data class TestCase(val c: Point, val p1: Point, val p2: Point, val expected: Double)
 
-        val distance45Degrees = Point.distance(Point.zero, Point(5.0, 5.0))
+        val distance45Degrees = Point.zero distanceTo Point(5.0, 5.0)
 
         val testCases = arrayOf(
             TestCase(Point.zero, Point(0.0, 10.0), Point(10.0, 0.0), toRadians(90.0)),

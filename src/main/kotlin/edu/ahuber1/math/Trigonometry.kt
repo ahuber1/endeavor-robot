@@ -22,8 +22,8 @@ public fun projectPoint(from: Point, distance: Double, angleRadians: Double): Po
  */
 public fun calculateArcAngleRadians(center: Point, point1: Point, point2: Point): Double {
     // https://math.stackexchange.com/questions/830413/calculating-the-arc-length-of-a-circle-segment
-    val distance = Point.distance(point1, point2)
-    val radius = Point.distance(center, point1)
+    val distance = point1 distanceTo point2
+    val radius = center distanceTo point1
     return acos(1.0 - (distance.squared / (2 * radius.squared)))
 }
 

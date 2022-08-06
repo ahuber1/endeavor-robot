@@ -1,11 +1,9 @@
 package edu.ahuber1.math
 
-import edu.ahuber1.math.Point.Companion.distance
 import edu.ahuber1.testing.assertEqualsWithinDelta
 import edu.ahuber1.testing.testAll
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-
-import org.junit.jupiter.api.Assertions.*
 
 internal class PointTest {
 
@@ -55,7 +53,7 @@ internal class PointTest {
     }
 
     @Test
-    fun testDistance() {
+    fun testDistanceTo() {
         data class TestCase(val p1: Point, val p2: Point, val expected: Double)
 
         val testCases = arrayOf(
@@ -68,8 +66,8 @@ internal class PointTest {
         )
 
         testCases.testAll {
-            assertEquals(expected, distance(p1, p2))
-            assertEquals(expected, distance(p2, p1))
+            assertEquals(expected, p1 distanceTo p2)
+            assertEquals(expected, p2 distanceTo p1)
         }
     }
 

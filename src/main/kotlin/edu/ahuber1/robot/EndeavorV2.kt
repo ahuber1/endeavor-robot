@@ -1,11 +1,8 @@
 package edu.ahuber1.robot
 
-import robocode.*
 import edu.ahuber1.math.Point
 import edu.ahuber1.math.equalsWithinDelta
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.collections.ArrayList
-import kotlin.concurrent.withLock
+import robocode.*
 import kotlin.math.absoluteValue
 import kotlin.math.asin
 import kotlin.math.cos
@@ -13,7 +10,6 @@ import kotlin.math.sin
 
 public class EndeavorV2 : TeamRobot() {
 
-    private val enemyLock = ReentrantLock()
     private var enemyInfo: EnemyInfo? = null
 
     override fun run() {
@@ -23,26 +19,24 @@ public class EndeavorV2 : TeamRobot() {
         isAdjustRadarForRobotTurn = true
 
         while (true) {
-            enemyLock.withLock {
-                val enemyInfo = this.enemyInfo
-                if (enemyInfo == null) {
-                    turnRadarRight(360.0)
-                    return@withLock
-                }
-
-                val enemyLocation = enemyInfo.location
-                val destination = determineDestination(enemyInfo)
-
-                if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
-                    enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, enemyInfo.encirclePointCount)
-                    return@withLock
-                }
-
-                attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
-                moveTank(destination.point)
-                attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
-                enemyInfo.lastAngle = destination.angle
+            val enemyInfo = this.enemyInfo
+            if (enemyInfo == null) {
+                turnRadarRight(360.0)
+                continue
             }
+
+            val enemyLocation = enemyInfo.location
+            val destination = determineDestination(enemyInfo)
+
+            if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
+                enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, enemyInfo.encirclePointCount)
+                continue
+            }
+
+            attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
+            moveTank(destination.point)
+            attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
+            enemyInfo.lastAngle = destination.angle
         }
     }
 
@@ -54,22 +48,20 @@ public class EndeavorV2 : TeamRobot() {
             return
         }
 
-        enemyLock.withLock {
-            val enemyName = enemyInfo?.name
+        val enemyName = enemyInfo?.name
 
-            if (enemyName != null && event.name != enemyName) {
-                return
-            }
-
-            val currentLocation = Point(x, y)
-            val enemyInfo = this.enemyInfo ?: EnemyInfo(event.name)
-            val enemyLocation = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
-            val rotationDirection = enemyInfo.rotationDirection ?: determineRotationDirection(enemyLocation)
-
-            enemyInfo.location = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
-            enemyInfo.setRotationDirection(rotationDirection, enemyInfo.encirclePointCount)
-            this.enemyInfo = enemyInfo
+        if (enemyName != null && event.name != enemyName) {
+            return
         }
+
+        val currentLocation = Point(x, y)
+        val enemyInfo = this.enemyInfo ?: EnemyInfo(event.name)
+        val enemyLocation = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
+        val rotationDirection = enemyInfo.rotationDirection ?: determineRotationDirection(enemyLocation)
+
+        enemyInfo.location = calculateEnemyLocation(currentLocation, heading, event.bearing, event.distance)
+        enemyInfo.setRotationDirection(rotationDirection, enemyInfo.encirclePointCount)
+        this.enemyInfo = enemyInfo
     }
 
     override fun onRobotDeath(event: RobotDeathEvent?) {
@@ -80,10 +72,8 @@ public class EndeavorV2 : TeamRobot() {
             return
         }
 
-        enemyLock.withLock {
-            if (this.enemyInfo?.name == event.name) {
-                this.enemyInfo = null
-            }
+        if (this.enemyInfo?.name == event.name) {
+            this.enemyInfo = null
         }
     }
 
@@ -95,13 +85,10 @@ public class EndeavorV2 : TeamRobot() {
             return
         }
 
-        enemyLock.withLock {
-            // Reverse rotation direction
-            this.enemyInfo?.setRotationDirection(
-                this.enemyInfo?.rotationDirection?.opposite,
-                this.enemyInfo?.encirclePointCount ?: 0
-            )
-        }
+        // Reverse rotation direction
+        val oppositeDirection = this.enemyInfo?.rotationDirection?.opposite
+        val newEncirclePointCount = this.enemyInfo?.encirclePointCount ?: 0
+        this.enemyInfo?.setRotationDirection(oppositeDirection, newEncirclePointCount)
     }
 
     private fun determineRotationDirection(enemyLocation: Point?): RotationDirection? {
