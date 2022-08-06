@@ -11,6 +11,7 @@ import kotlin.math.sin
 public class EndeavorV2 : TeamRobot() {
 
     private var enemyInfo: EnemyInfo? = null
+    private var previousDestination: EncirclePoint? = null
 
     override fun run() {
         super.run()
@@ -19,6 +20,9 @@ public class EndeavorV2 : TeamRobot() {
         isAdjustRadarForRobotTurn = true
 
         while (true) {
+            val previousDestination = previousDestination
+            this.previousDestination = null
+
             val enemyInfo = this.enemyInfo
             if (enemyInfo == null) {
                 turnRadarRight(360.0)
@@ -26,7 +30,7 @@ public class EndeavorV2 : TeamRobot() {
             }
 
             val enemyLocation = enemyInfo.location
-            val destination = determineDestination(enemyInfo)
+            val destination = determineDestination(enemyInfo, previousDestination)
 
             if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
                 enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, enemyInfo.encirclePointCount)
@@ -37,6 +41,7 @@ public class EndeavorV2 : TeamRobot() {
             moveTank(destination.point)
             attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
             enemyInfo.lastAngle = destination.angle
+            this.previousDestination = destination
         }
     }
 
@@ -115,7 +120,7 @@ public class EndeavorV2 : TeamRobot() {
         }
     }
 
-    private fun determineDestination(enemyInfo: EnemyInfo): EncirclePoint? {
+    private fun determineDestination(enemyInfo: EnemyInfo, previousEncirclePoint: EncirclePoint?): EncirclePoint? {
         // Extract the data we need from the EnemyInfo object. Also perform null checks.
         val enemyLocation = enemyInfo.location ?: return null
         val rotationDirection = enemyInfo.rotationDirection ?: return null
@@ -130,7 +135,8 @@ public class EndeavorV2 : TeamRobot() {
         //    90 degrees is directly to the right of the enemy); and store that point, the distance from the robot's
         //    current location to the enemy, and the angle in an EncirclePoint object.
         // 4. Remove any EncirclePoints where the distance to the enemy is 0.0 +/- DISTANCE_DELTA.
-        val encirclePoints =
+        // 5. If the previous angle is known, remove any EncirclePoints where the angle is equal to the previous angle.
+        var encirclePoints =
             buildRotationAngleProgression(rotationDirection, progressionStartAngle) // Get list of angles around enemy
                 .distinct() // Remove duplicates
                 .map { angle ->
@@ -139,6 +145,12 @@ public class EndeavorV2 : TeamRobot() {
                     EncirclePoint(point, angle, distance)
                 }
                 .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, Constants.DISTANCE_DELTA) }
+
+        if (previousEncirclePoint != null) {
+            encirclePoints = encirclePoints.filter {
+                !it.angle.equalsWithinDelta(previousEncirclePoint.angle, Constants.ANGLE_DELTA)
+            }
+        }
 
         // Find the EncirclePoint that is closest to the robot.
         val closestDistance = encirclePoints.minByOrNull { it.distanceFromRobot }?.distanceFromRobot ?: return null
