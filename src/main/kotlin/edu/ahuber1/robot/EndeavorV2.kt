@@ -3,15 +3,11 @@ package edu.ahuber1.robot
 import edu.ahuber1.math.Point
 import edu.ahuber1.math.equalsWithinDelta
 import robocode.*
-import kotlin.math.absoluteValue
-import kotlin.math.asin
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.*
 
 public class EndeavorV2 : TeamRobot() {
 
     private var enemyInfo: EnemyInfo? = null
-    private var previousDestination: EncirclePoint? = null
 
     override fun run() {
         super.run()
@@ -20,28 +16,26 @@ public class EndeavorV2 : TeamRobot() {
         isAdjustRadarForRobotTurn = true
 
         while (true) {
-            val previousDestination = previousDestination
-            this.previousDestination = null
+            turnRadarRight(360.0)
 
-            val enemyInfo = this.enemyInfo
-            if (enemyInfo == null) {
-                turnRadarRight(360.0)
-                continue
-            }
-
+            val enemyInfo = this.enemyInfo ?: continue
             val enemyLocation = enemyInfo.location
-            val destination = determineDestination(enemyInfo, previousDestination)
+            val destination = determineDestination(enemyInfo)
 
             if (enemyLocation == null || destination == null || !enemyInfo.decrementPointsRemaining()) {
                 enemyInfo.setRotationDirection(enemyInfo.rotationDirection?.opposite, enemyInfo.encirclePointCount)
                 continue
             }
 
-            attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
+            var distanceToEnemy = enemyLocation.distanceTo(x, y)
+            var firePower = calculateBulletPower(distanceToEnemy)
+            attackEnemy(enemyLocation, firePower)
             moveTank(destination.point)
-            attackEnemy(enemyLocation, Rules.MIN_BULLET_POWER) // TODO: Adjust power
+
+            distanceToEnemy = enemyLocation.distanceTo(x, y)
+            firePower = calculateBulletPower(distanceToEnemy)
+            attackEnemy(enemyLocation, firePower)
             enemyInfo.lastAngle = destination.angle
-            this.previousDestination = destination
         }
     }
 
@@ -120,7 +114,7 @@ public class EndeavorV2 : TeamRobot() {
         }
     }
 
-    private fun determineDestination(enemyInfo: EnemyInfo, previousEncirclePoint: EncirclePoint?): EncirclePoint? {
+    private fun determineDestination(enemyInfo: EnemyInfo): EncirclePoint? {
         // Extract the data we need from the EnemyInfo object. Also perform null checks.
         val enemyLocation = enemyInfo.location ?: return null
         val rotationDirection = enemyInfo.rotationDirection ?: return null
@@ -146,9 +140,10 @@ public class EndeavorV2 : TeamRobot() {
                 }
                 .filter { !it.distanceFromRobot.equalsWithinDelta(0.0, Constants.DISTANCE_DELTA) }
 
-        if (previousEncirclePoint != null) {
+        val lastAngle = enemyInfo.lastAngle
+        if (lastAngle != null) {
             encirclePoints = encirclePoints.filter {
-                !it.angle.equalsWithinDelta(previousEncirclePoint.angle, Constants.ANGLE_DELTA)
+                !it.angle.equalsWithinDelta(lastAngle, Constants.ANGLE_DELTA)
             }
         }
 
@@ -301,6 +296,10 @@ public class EndeavorV2 : TeamRobot() {
             }
 
             return normalized
+        }
+
+        private fun calculateBulletPower(distanceToEnemy: Double): Double {
+            return min(400.0 / distanceToEnemy, Rules.MAX_BULLET_POWER)
         }
     }
 }
