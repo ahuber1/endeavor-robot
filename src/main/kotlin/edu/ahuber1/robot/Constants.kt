@@ -7,7 +7,9 @@ public object Constants {
     public const val ANGLE_DELTA: Double = ENCIRCLING_STEP_ANGLE / 2
     public const val FULL_ROTATION_ANGLE_COUNT: Int = 1 + (360 / ENCIRCLING_STEP_ANGLE.toInt())
     public const val ENCIRCLE_COUNT_DELTA: Double = 0.25
+    public const val RADAR_ROTATION_DELTA: Double = 45.0
 
     public val ENCIRCLE_COUNT_RANGE: ClosedFloatingPointRange<Double> = 0.25..2.00
-    public val SAFE_DISTANCE_RANGE: IntRange = 100..500
+    public val SAFE_DISTANCE_RANGE: IntRange = 100..300
+    public val RADAR_ROTATION_RANGE: ClosedFloatingPointRange<Double> = 45.0..360.0
 }

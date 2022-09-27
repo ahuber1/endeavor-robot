@@ -9,6 +9,9 @@ public class EndeavorV2 : TeamRobot() {
 
     private val enemies = HashMap<String, EnemyInfo>()
     private var closestEnemy: EnemyInfo? = null
+    private var turnNumber = 0L
+
+    // TODO: Add predictive trajectory for bullet.
 
     override fun run() {
         super.run()
@@ -17,32 +20,36 @@ public class EndeavorV2 : TeamRobot() {
         isAdjustRadarForRobotTurn = true
 
         while (true) {
+            turnNumber++
             turnRadarRight(360.0)
 
             val closestEnemy = enemies.values
-                .filter { it.location != null }
+                .filter { it.turnNumber == turnNumber && it.location != null }
                 .minByOrNull { it.location!!.distanceTo(x, y) }
+
             this.closestEnemy = closestEnemy
 
-            if (closestEnemy != null) {
-                val enemyLocation = closestEnemy.location
-                val destination = determineDestination(closestEnemy)
+            val enemyLocation = closestEnemy?.location
+            if (enemyLocation != null) {
+                val destination = when (enemyLocation.distanceTo(x, y) > Constants.SAFE_DISTANCE_RANGE.last) {
+                    true -> calculateAdvancePoint(closestEnemy)
+                    false -> calculateEncirclePoint(closestEnemy)
+                }
 
-                if (enemyLocation == null || destination == null || !closestEnemy.decrementPointsRemaining()) {
-                    closestEnemy.setRotationDirection(
-                        closestEnemy.rotationDirection?.opposite,
-                        closestEnemy.encirclePointCount
-                    )
-                } else {
-                    var distanceToEnemy = enemyLocation.distanceTo(x, y)
-                    var firePower = calculateBulletPower(distanceToEnemy)
+                println("Destination is $destination")
+                if (destination != null) {
+                    val distanceToEnemy = enemyLocation.distanceTo(x, y)
+                    val firePower = calculateBulletPower(distanceToEnemy)
                     attackEnemy(enemyLocation, firePower)
                     moveTank(destination.point)
-
-                    distanceToEnemy = enemyLocation.distanceTo(x, y)
-                    firePower = calculateBulletPower(distanceToEnemy)
-                    attackEnemy(enemyLocation, firePower)
-                    closestEnemy.lastAngle = destination.angle
+                    closestEnemy.lastAngle = when (destination) {
+                        is EncirclePoint -> destination.angle
+                        else -> null
+                    }
+                    closestEnemy.state = when (destination) {
+                        is EncirclePoint -> EnemyInfo.State.ENCIRCLING
+                        else -> EnemyInfo.State.ADVANCING
+                    }
                 }
             }
 
@@ -71,7 +78,8 @@ public class EndeavorV2 : TeamRobot() {
         val rotationDirection = enemyInfo.rotationDirection ?: determineRotationDirection(enemyLocation)
 
         enemyInfo.location = enemyLocation
-        enemyInfo.setRotationDirection(rotationDirection, enemyInfo.encirclePointCount)
+        enemyInfo.rotationDirection = rotationDirection
+        enemyInfo.turnNumber = turnNumber
     }
 
     override fun onRobotDeath(event: RobotDeathEvent?) {
@@ -94,10 +102,11 @@ public class EndeavorV2 : TeamRobot() {
             return
         }
 
-        // Reverse rotation direction
-        val oppositeDirection = this.closestEnemy?.rotationDirection?.opposite
-        val newEncirclePointCount = this.closestEnemy?.encirclePointCount ?: 0
-        this.closestEnemy?.setRotationDirection(oppositeDirection, newEncirclePointCount)
+        when (this.closestEnemy?.state) {
+            null -> return
+            EnemyInfo.State.ADVANCING -> back(100.0)
+            EnemyInfo.State.ENCIRCLING -> this.closestEnemy?.rotationDirection = this.closestEnemy?.rotationDirection?.opposite
+        }
     }
 
     private fun determineRotationDirection(enemyLocation: Point?): RotationDirection? {
@@ -124,7 +133,22 @@ public class EndeavorV2 : TeamRobot() {
         }
     }
 
-    private fun determineDestination(enemyInfo: EnemyInfo): EncirclePoint? {
+    private fun calculateAdvancePoint(enemyInfo: EnemyInfo): AdvancePoint? {
+        // Extract the data we need ofrom the EnemyInfo object. Also perform null checks.
+        val enemyLocation = enemyInfo.location ?: return null
+        val currentLocation = Point(x, y)
+        val angleRadians = asin((enemyLocation.x - x) / (enemyLocation distanceTo currentLocation))
+        val angle = normalizeDegrees(Math.toDegrees(angleRadians), true)
+        val middleDistance = (Constants.SAFE_DISTANCE_RANGE.last + Constants.SAFE_DISTANCE_RANGE.first) / 2
+        val destination = getPointAlongCircle(
+            currentLocation,
+            angle,
+            (enemyLocation distanceTo currentLocation).toInt() - middleDistance
+        )
+        return AdvancePoint(destination, enemyLocation distanceTo currentLocation)
+    }
+
+    private fun calculateEncirclePoint(enemyInfo: EnemyInfo): EncirclePoint? {
         // Extract the data we need from the EnemyInfo object. Also perform null checks.
         val enemyLocation = enemyInfo.location ?: return null
         val rotationDirection = enemyInfo.rotationDirection ?: return null
@@ -180,6 +204,8 @@ public class EndeavorV2 : TeamRobot() {
 
         turnRight(turnAmount)
         ahead(startLocation distanceTo endLocation)
+
+        println("Moved from $startLocation to $endLocation")
     }
 
     @Suppress("SameParameterValue") // TODO: Consider removing firePower param.
